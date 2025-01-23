@@ -26,8 +26,7 @@
     "use_anchored_offset": true,
     "alpha": 1,
     "property_bag": {
-      "#my_text": "($atext)",
-      "#tst": 0.6
+      "#my_text": "($atext)"
     },
     "$percent": 0.01,
     "bindings": [
