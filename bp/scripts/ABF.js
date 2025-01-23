@@ -56,7 +56,7 @@ export class ABF {
         }
         return this;
     }
-    #form; #run; #title
+    #form; #run; #title; #offsetX=0; #offsetY=0;
     // define ui appearance
     ui = {
         colors: {
@@ -85,6 +85,10 @@ export class ABF {
         this.#form.scripts.x = scripts.x
         this.#form.scripts.y = scripts.y
         return this;
+    }
+    offset (offsetX = 0, offsetY = 0) {
+        this.#offsetX = Math.min(99, Math.max(0, Math.floor(offsetX)));
+        this.#offsetY = Math.min(99, Math.max(0, Math.floor(offsetY)));
     }
 
 
@@ -169,7 +173,7 @@ export class ABF {
                     const tick = system.currentTick % 20
                     const tick1 = system.currentTick % 6
                     try {
-                        player.onScreenDisplay.setActionBar(
+                        player.onScreenDisplay.setActionBar('§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +
                             this.ui.background + `§r§${this.ui.colors.title}${this.#title}§r${colorA}\n` +
                             this.#form.display
                                 .map((row, rowIndex) => {
@@ -194,7 +198,7 @@ export class ABF {
                     }
                     // conclusion
                     if (player.inputInfo.getButtonState(InputButton.Sneak) === "Pressed") {
-                        player.onScreenDisplay.setActionBar("§c§lCanceled");
+                        player.onScreenDisplay.setActionBar('§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +"§c§lCanceled");
                         system.runTimeout(() => (player.inputPermissions.movementEnabled = true), 4);
                         resolve({ line: undefined, slot: undefined, cancelled: true });
                         system.clearRun(this.#run);
@@ -202,7 +206,7 @@ export class ABF {
 
                     if (player.inputInfo.getButtonState(InputButton.Jump) === "Pressed") {
                         if (['#', '%'].some(k => this.#form.display[line][slot]?.startsWith(k))) return;
-                        player.onScreenDisplay.setActionBar("§a§l" + this.#form.display[line][slot]);
+                        player.onScreenDisplay.setActionBar('§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +"§a§l" + this.#form.display[line][slot]);
                         system.runTimeout(() => {
                             player.inputPermissions.movementEnabled = true;
                             resolve({ line, slot, cancelled: false })
