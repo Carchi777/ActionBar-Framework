@@ -14,15 +14,35 @@ world.afterEvents.chatSend.subscribe(({ message, sender: player }) => {
 
         ])
         .scripts(Scripts.basic)
-    form.ui = UI.lightMode
+    form.ui = UI.darkMode
+    form.settings.type.slow();
 
-    form.offset(0,0)
+    form.offset(30,30)
     form.show(player, 0, 1).then(({ line, slot, cancelled }) => {
         if (cancelled) return;
-        player.sendMessage([
+        // player.sendMessage([
+        //     ['#      ', 'Option 1', '#      ', 'Option 2'],
+        //     ['#      ', 'Option 3', '#      ', 'Option 4', '#\n'],
+
+        // ][line][slot])
+        const form = new ABF()
+        .title('\n   What option do you think is correct?    \n')
+        .pattern([
             ['#      ', 'Option 1', '#      ', 'Option 2'],
             ['#      ', 'Option 3', '#      ', 'Option 4', '#\n'],
+            ['#      ', '#Do you think this form is cool?', '#      '],
+            ['#         ', 'Yes', '#            ', 'No', '#']
 
-        ][line][slot])
+
+
+        ])
+        .scripts(Scripts.basic)
+    form.ui = UI.darkMode
+    form.settings.type.default();
+
+    form.offset(30,30)
+    form.show(player, 0, 1).then(({ line, slot, cancelled }) => {
+        if (cancelled) return;
+    })
     })
 });
