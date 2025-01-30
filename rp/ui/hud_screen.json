@@ -1,72 +1,77 @@
 {
-  "namespace": "hud",
-  
-"hud_actionbar_text": {
-    "type": "image",
-    "size": [
-      "100%c + 12px",
-      "100%c + 5px"
-  ],
-
-    "anchor_from": "top_left",
-    "anchor_to": "top_left",
-    
-    "$atext": "$actionbar_text",
-    
-    "$img|default": "textures/ui/background_image",
-    "texture": "$img",
-    "variables": [
-        {
-            "requires": "(not (($atext - '§o§0') = $atext))",
-            "$img": "textures/ui/ABF_dark_mode"
-        }
-    ],
-
-
-    "use_anchored_offset": true,
-    "alpha": 1,
-    "property_bag": {
-      "#my_text": "($atext)"
-    },
-    "$percent": 0.01,
-    "bindings": [
-      {
-        "source_property_name": "(('%.5s' * #my_text) - '§f')",
-        "binding_type": "view",
-        "target_property_name": "#loc_x"
-      }
-      ,
-      {
-        "source_property_name": "(#loc_x * $percent)",
-        "binding_type": "view",
-        "target_property_name": "#anchored_offset_value_x"
-      },
-      {
-        "source_property_name": "(('%.7s' * #my_text) - ('%.5s' * #my_text))",
-        "binding_type": "view",
-        "target_property_name": "#loc_y"
-      }
-      ,
-      {
-        "source_property_name": "(#loc_y * $percent)",
-        "binding_type": "view",
-        "target_property_name": "#anchored_offset_value_y"
-      }
-    ],
-    "controls": [
-      {
-        "actionbar_message": {
-          "type": "label",
-          "anchor_from": "center",
-          "anchor_to": "center",
-          "color": "$tool_tip_text",
-          "layer": 31,
-          "$final_text": "('§f' + $atext - ('%.7s' * $atext))",
-          "text": "$final_text",
-          "localize": true,
-          "alpha": "@hud.anim_actionbar_text_alpha_out"
-        }
-      }
-    ]
-  }
-}
+   "namespace": "hud",
+   
+ "hud_actionbar_text": {
+     "type": "image",
+     "size": [
+       "100%c + 12px",
+       "100%c + 5px"
+   ],
+ 
+     "anchor_from": "top_left",
+     "anchor_to": "top_left",
+     
+     "$atext": "$actionbar_text",
+     
+     "$img|default": "textures/ui/background_image",
+     "$alpha": 1,
+     "texture": "$img",
+     "variables": [
+         {
+             "requires": "(not (($atext - '§o§0') = $atext))",
+             "$img": "textures/ui/ABF_dark_mode"
+         },
+         {
+          "requires": "($atext = ' ')",
+          "$alpha": 0
+         }
+     ],
+ 
+ 
+     "use_anchored_offset": true,
+     "alpha": "$alpha",
+     "property_bag": {
+       "#my_text": "($atext)"
+     },
+     "$percent": 0.01,
+     "bindings": [
+       {
+         "source_property_name": "(('%.5s' * #my_text) - '§f')",
+         "binding_type": "view",
+         "target_property_name": "#loc_x"
+       }
+       ,
+       {
+         "source_property_name": "(#loc_x * $percent)",
+         "binding_type": "view",
+         "target_property_name": "#anchored_offset_value_x"
+       },
+       {
+         "source_property_name": "(('%.7s' * #my_text) - ('%.5s' * #my_text))",
+         "binding_type": "view",
+         "target_property_name": "#loc_y"
+       }
+       ,
+       {
+         "source_property_name": "(#loc_y * $percent)",
+         "binding_type": "view",
+         "target_property_name": "#anchored_offset_value_y"
+       }
+     ],
+     "controls": [
+       {
+         "actionbar_message": {
+           "type": "label",
+           "anchor_from": "center",
+           "anchor_to": "center",
+           "color": "$tool_tip_text",
+           "layer": 31,
+           "$final_text": "('§f' + $atext - ('%.7s' * $atext))",
+           "text": "$final_text",
+           "localize": true,
+           "alpha": "@hud.anim_actionbar_text_alpha_out"
+         }
+       }
+     ]
+   }
+ }
