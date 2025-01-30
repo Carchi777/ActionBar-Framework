@@ -1,3 +1,4 @@
+
 import { world, Player, system, InputButton, } from "@minecraft/server"
 
 
@@ -41,6 +42,7 @@ export const UI = {
     }
 }
 
+
 // Class
 export class ABF {
     // initialization of the form
@@ -56,7 +58,7 @@ export class ABF {
         }
         return this;
     }
-    #form; #run; #title; #offsetX=0; #offsetY=0;
+    #form; #run; #title; #offsetX=0; #offsetY=0; #type = "default";
     // define ui appearance
     ui = {
         colors: {
@@ -68,6 +70,14 @@ export class ABF {
         background: '', // default black
         render: {
             light: '§j' // the color of the selected button blinking
+        }
+    }
+
+    settings = {
+        cancellable: false,
+        type: {
+            slow: () => this.#type = "slow",
+            default: () => this.#type = "default"
         }
     }
 
@@ -110,6 +120,7 @@ export class ABF {
                 const state = { turbo: false, ms: 0 };
                 
                 // runinterval to show the player the form and update it
+                let i = 10;
                 this.#run = system.runInterval(() => {
                     const mx = -player.inputInfo.getMovementVector().x;
                     const my = -player.inputInfo.getMovementVector().y;
@@ -173,7 +184,7 @@ export class ABF {
                     const tick = system.currentTick % 20
                     const tick1 = system.currentTick % 6
                     try {
-                        player.onScreenDisplay.setActionBar('§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +
+                        let output = '§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +
                             this.ui.background + `§r§${this.ui.colors.title}${this.#title}§r${colorA}\n` +
                             this.#form.display
                                 .map((row, rowIndex) => {
@@ -191,13 +202,23 @@ export class ABF {
                                         }
                                         return `    ${button}    `;
                                     }).join(`§r${colorA}`);
-                                }).join("\n")
-                        );
+                                }).join("\n");
+                        
+                            if (this.#type == "slow") {
+                                while (output[i-1] == " " || output[i-1] == "§") { i++;}
+                                player.onScreenDisplay.setActionBar(output.substring(0,i));
+                                i++;
+                            }
+                            else if (this.#type == "default") {
+                                player.onScreenDisplay.setActionBar(output);
+                            }
+
+
                     } catch (e) {
                         throw new Error('[ActionBarFramework] Unable to dislplay the form. ' + e)
                     }
                     // conclusion
-                    if (player.inputInfo.getButtonState(InputButton.Sneak) === "Pressed") {
+                    if (player.inputInfo.getButtonState(InputButton.Sneak) === "Pressed" && this.cancellable == true) {
                         player.onScreenDisplay.setActionBar('§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +"§c§lCanceled");
                         system.runTimeout(() => (player.inputPermissions.movementEnabled = true), 4);
                         resolve({ line: undefined, slot: undefined, cancelled: true });
@@ -206,12 +227,15 @@ export class ABF {
 
                     if (player.inputInfo.getButtonState(InputButton.Jump) === "Pressed") {
                         if (['#', '%'].some(k => this.#form.display[line][slot]?.startsWith(k))) return;
-                        player.onScreenDisplay.setActionBar('§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +"§a§l" + this.#form.display[line][slot]);
+                        //player.onScreenDisplay.setActionBar('§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +"§a§l" + this.#form.display[line][slot]);
+                        
                         system.runTimeout(() => {
                             player.inputPermissions.movementEnabled = true;
                             resolve({ line, slot, cancelled: false })
+                            player.onScreenDisplay.setActionBar(" ");
                         }, 4);
                         system.clearRun(this.#run);
+                        player.onScreenDisplay.setActionBar(" ");
                     }
                 });
             }, 1)
