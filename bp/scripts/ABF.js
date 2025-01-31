@@ -42,6 +42,57 @@ export const UI = {
     }
 }
 
+export class Line {
+    #content = [];
+
+    constructor(arr = []) {
+        this.#content = arr;
+        return this;
+    }
+
+    set(arr) {
+        if (Array.isArray(arr) && arr.every(item => typeof item === 'string')) {
+            this.#content = arr;
+        }
+        return this;
+    }
+
+    add(item, isText = false) {
+        if (typeof item === 'string') {
+            const formattedItem = isText ? `#${item}` : item;
+            this.#content.push(formattedItem);
+        }
+        return this;
+    }
+
+    insertAt(index, item, isText = false) {
+        if (typeof item === 'string') {
+            const formattedItem = isText ? `#${item}` : item;
+            this.#content.splice(index, 0, formattedItem);
+        }
+        return this;
+    }
+
+    replace(index, item, isText = false) {
+        if (typeof item === 'string' && index >= 0 && index < this.#content.length) {
+            const formattedItem = isText ? `#${item}` : item;
+            this.#content.splice(index, 1, formattedItem);
+        }
+        return this;
+    }
+
+    remove(index) {
+        if (index >= 0 && index < this.#content.length) {
+            this.#content.splice(index, 1);
+        }
+        return this;
+    }
+
+    get() {
+        return this.#content;
+    }
+}
+
 
 // Class
 export class ABF {
@@ -90,6 +141,23 @@ export class ABF {
         this.#form.display = pattern
         return this;
     }
+
+    addLine(line) {
+        this.#form.display.push(line.get());
+        return this;
+    }
+    removeLine(index) {
+        this.#form.display.splice(index, 1);
+        return this;
+    }
+    replaceLine(index, line) {
+        this.#form.display.splice(index, 1, line.get());
+        return this;
+    }
+    insertLineAt(index, line) {
+        this.#form.display.splice(index, 0, line.get());
+    }
+
     /**@param {{y:(y: number,line:number,slot:number,player:Player) => { line: number, slot:number },x:(x: number,line:number,slot:number,player:Player) => { line: number, slot:number }}} scripts */
     scripts(scripts = { x, y }) {
         this.#form.scripts.x = scripts.x
