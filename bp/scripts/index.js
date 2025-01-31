@@ -1,39 +1,17 @@
 import { world } from "@minecraft/server"
-import {ABF,UI,Scripts} from "abf.js";
+import {ABF,UI,Scripts,Line} from "abf.js";
 world.afterEvents.chatSend.subscribe(({ message, sender: player }) => {
     if (message != 'form') return;
+    const line = new Line();
+    line.add('test', true).add('test').add('test',true)
+    line.remove(2)
     const form = new ABF()
-        .title('\n   What option do you think is correct?    \n')
+        .title('   What option do you think is correct?    \n')
         .pattern([
             ['#      ', 'Option 1', '#      ', 'Option 2'],
             ['#      ', 'Option 3', '#      ', 'Option 4', '#\n'],
             ['#      ', '#Do you think this form is cool?', '#      '],
             ['#         ', 'Yes', '#            ', 'No', '#']
-
-
-
-        ])
-        .scripts(Scripts.basic)
-    form.ui = UI.darkMode
-    form.settings.type.slow();
-
-    form.offset(30,30)
-    form.show(player, 0, 1).then(({ line, slot, cancelled }) => {
-        if (cancelled) return;
-        // player.sendMessage([
-        //     ['#      ', 'Option 1', '#      ', 'Option 2'],
-        //     ['#      ', 'Option 3', '#      ', 'Option 4', '#\n'],
-
-        // ][line][slot])
-        const form = new ABF()
-        .title('\n   What option do you think is correct?    \n')
-        .pattern([
-            ['#      ', 'Option 1', '#      ', 'Option 2'],
-            ['#      ', 'Option 3', '#      ', 'Option 4', '#\n'],
-            ['#      ', '#Do you think this form is cool?', '#      '],
-            ['#         ', 'Yes', '#            ', 'No', '#']
-
-
 
         ])
         .scripts(Scripts.basic)
@@ -43,6 +21,6 @@ world.afterEvents.chatSend.subscribe(({ message, sender: player }) => {
     form.offset(30,30)
     form.show(player, 0, 1).then(({ line, slot, cancelled }) => {
         if (cancelled) return;
-    })
+
     })
 });
