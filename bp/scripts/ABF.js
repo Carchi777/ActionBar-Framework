@@ -186,6 +186,11 @@ export class ABF {
             system.runTimeout(() => {
                 // turbo selection for better user experience
                 const state = { turbo: false, ms: 0 };
+
+
+                const colorA = "§" + this.ui.colors.all // all // update: define colors outside the system.runinterval
+                const colorB = "§" + this.ui.colors.selected // select
+                const colorT = "§" + this.ui.colors.text // text
                 
                 // runinterval to show the player the form and update it
                 let i = 10;
@@ -246,45 +251,40 @@ export class ABF {
                     } else state.turbo = false;
                     
                     // display the form
-                    const colorA = "§" + this.ui.colors.all // all
-                    const colorB = "§" + this.ui.colors.selected // select
-                    const colorT = "§" + this.ui.colors.text // text
                     const tick = system.currentTick % 20
                     const tick1 = system.currentTick % 6
-                    try {
-                        let output = '§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +
-                            this.ui.background + `§r§${this.ui.colors.title}${this.#title}§r${colorA}\n` +
-                            this.#form.display
-                                .map((row, rowIndex) => {
-                                    return row.map((button, buttonIndex) => {
-                                        if (button?.startsWith("#")) {
-                                            return `${colorT}${button.slice(1)}§r${colorA}`;
-                                        }
-                                        if (button?.startsWith("%")) {
-                                            if (rowIndex === line && buttonIndex === slot)
-                                                return `§l${button.slice(1)}§r${colorA}`;
-                                            else return button.slice(1)
-                                        }
-                                        if (rowIndex === line && buttonIndex === slot) {
-                                            return `§l${tick1 > 2 ? colorB : this.ui.render.light}${tick > 9 ? ' -' : '- '}${button}${tick > 9 ? '- ' : ' -'}§r${colorA}`;
-                                        }
-                                        return `    ${button}    `;
-                                    }).join(`§r${colorA}`);
-                                }).join("\n");
-                        
-                            if (this.#type == "slow") {
-                                while (output[i-1] == " " || output[i-1] == "§") { i++;}
-                                player.onScreenDisplay.setActionBar(output.substring(0,i));
-                                i++;
-                            }
-                            else if (this.#type == "default") {
-                                player.onScreenDisplay.setActionBar(output);
-                            }
-
-
-                    } catch (e) {
-                        throw new Error('[ActionBarFramework] Unable to dislplay the form. ' + e)
-                    }
+                    if (x || y || tick1 == 2 || tick == 9) // update: dont update the form when not needed
+                        try {
+                            let output = '§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +
+                                this.ui.background + `§r§${this.ui.colors.title}${this.#title}§r${colorA}\n` +
+                                this.#form.display
+                                    .map((row, rowIndex) => {
+                                        return row.map((button, buttonIndex) => {
+                                            if (button?.startsWith("#")) {
+                                                return `${colorT}${button.slice(1)}§r${colorA}`;
+                                            }
+                                            if (button?.startsWith("%")) {
+                                                if (rowIndex === line && buttonIndex === slot)
+                                                    return `§l${button.slice(1)}§r${colorA}`;
+                                                else return button.slice(1)
+                                            }
+                                            if (rowIndex === line && buttonIndex === slot) {
+                                                return `§l${tick1 > 2 ? colorB : this.ui.render.light}${tick > 9 ? ' -' : '- '}${button}${tick > 9 ? '- ' : ' -'}§r${colorA}`;
+                                            }
+                                            return `    ${button}    `;
+                                        }).join(`§r${colorA}`);
+                                    }).join("\n");
+                                if (this.#type == "slow") {
+                                    while (output[i-1] == " " || output[i-1] == "§") { i++;}
+                                    player.onScreenDisplay.setActionBar(output.substring(0,i) + new Array(output.lenght).fill(' ').join('')); // needs some calcs to create the background without text
+                                    i++;
+                                }
+                                else if (this.#type == "default") {
+                                    player.onScreenDisplay.setActionBar(output);
+                                }
+                        } catch (e) {
+                            throw new Error('[ActionBarFramework] Unable to dislplay the form. ' + e)
+                        }
                     // conclusion
                     if (player.inputInfo.getButtonState(InputButton.Sneak) === "Pressed" && this.cancellable == true) {
                         player.onScreenDisplay.setActionBar('§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +"§c§lCanceled");
