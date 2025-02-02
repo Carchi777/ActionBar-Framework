@@ -191,6 +191,40 @@ export class ABF {
                 const colorA = "§" + this.ui.colors.all // all // update: define colors outside the system.runinterval
                 const colorB = "§" + this.ui.colors.selected // select
                 const colorT = "§" + this.ui.colors.text // text
+
+                let foundIndex = false;
+
+                //decide which button should be selected if the one passed through show() is invalid
+                if (this.#form.display[line][slot].startsWith("#")) {
+                    for (let i = 0; i < this.#form.display.length; i++) {
+                        for (let j = 0; j < this.#form.display[i].length; j++) {
+                            if (!this.#form.display[i][j].startsWith("#")) {
+                                line = i;
+                                slot = j;  // Store row & column index
+                                foundIndex = true;
+                                break;
+                            }
+                        }
+                        if (foundIndex) break; // Stop looping if found
+                    }
+                }
+                const filtered = [];
+
+                // Iterate over each row and each string in the row
+                this.#form.display.forEach((row, rowIndex) => {
+                  row.forEach((str, colIndex) => {
+                    // Check if the string does NOT start with '#'
+                    if (!str.startsWith("#")) {
+                      // Store the string and its original indices in an object
+                      filtered.push({
+                        row: rowIndex,
+                        col: colIndex,
+                        value: str
+                      });
+                    }
+                  });
+                });
+
                 
                 // runinterval to show the player the form and update it
                 let i = 10;
@@ -211,46 +245,99 @@ export class ABF {
                             state.ms = 0;
                         }
                     }
-
-                    // behavior based on what you moved
                     if ((y || x) && !locked) {
                         state.turbo ? (state.ms += 1) : (state.ms += 4);
-
-                        if (x) {
-                            try {
-                                const { line: l, slot: s } = this.#form.scripts.x(x, line, slot, player); // using x script
-                                [line, slot] = [l, s]
-                                while (
-                                    this.#form.display[line] &&
-                                    this.#form.display[line][slot]?.startsWith("#")
-                                ) {
-                                    this.#form.display[line][slot + x] ? (slot += x) : (slot -= x);
+                        if(x) {
+                            const found = filtered.find(item => item.row === line && item.col === x + slot);
+                            if (found) {
+                                line = found.row;
+                                slot = found.col;
+                            }
+                            else {
+                                if (x>0) {
+                                    const found = filtered.find(item => item.row === line && item.col > slot);
+                                    if (found) {
+                                        slot = found.col;
+                                    }
                                 }
-                                slot = Math.max(0, Math.min(slot, this.#form.display[line].length - 1));
-                            } catch (e) {
-                                throw new Error('[ActionBarFramework] Error in script x. ' + e)
+                                else if (x<0) {
+                                    const found = filtered.find(item => item.row === line && item.col < slot);
+                                    if (found) {
+                                        slot = found.col;
+                                    }
+                                }
                             }
                         }
-
                         if (y) {
-                            try {
-                                const { line: l, slot: s } = this.#form.scripts.y(y, line, slot, player);// using x script
-                                [line, slot] = [l, s]
-                                while (
-                                    this.#form.display[line] &&
-                                    this.#form.display[line].every((btn) => btn.startsWith("#"))
-                                ) {
-                                    this.#form.display[line + y] ? (line += y) : (line -= y);
+                            const found = filtered.find(item => item.row === line + y && item.col === slot);
+                            if (found) {
+                                line = found.row;
+                                slot = found.col;
+                            }
+                            else {
+                                if (y>0) {
+                                    const found = filtered.find(item => item.row > line && item.col === slot);
+                                    if (found) {
+                                        line = found.row;
+                                    }
+                                    else {
+                                        const candidates = filtered.filter(item => item.row > line);
+
+                                        if (candidates.length > 0) {
+                                          // Find the next existing line (i.e. the smallest row number)
+                                          const nextLine = Math.min(...candidates.map(item => item.row));
+                                      
+                                          // Filter candidates to only those in the next line.
+                                          const nextLineCandidates = candidates.filter(item => item.row === nextLine);
+                                      
+                                          // Find the candidate in this row with the col closest to slot.
+                                          const found = nextLineCandidates.reduce((closest, item) => {
+                                            // If closest is not set, return the current item
+                                            if (!closest) return item;
+                                            // Compare the absolute difference in col values
+                                            return (Math.abs(item.col - slot) < Math.abs(closest.col - slot)) ? item : closest;
+                                          }, null);
+                                          if (found) {
+                                            line = found.row;
+                                            slot = found.col;
+                                          }
+                                        }
+                                    }
                                 }
-                                line = Math.max(0, Math.min(line, this.#form.display.length - 1));
-                                slot = Math.min(slot, this.#form.display[line].length - 1);
-                            } catch (e) {
-                                throw new Error('[ActionBarFramework] Error in script y. ' + e)
+                                else if (y<0) {
+                                    const found = filtered.find(item => item.row < line && item.col === slot);
+                                    if (found) {
+                                        line = found.row;
+                                    }
+                                    else {
+                                        const candidates = filtered.filter(item => item.row < line);
+
+                                        if (candidates.length > 0) {
+                                          // Find the largest row (i.e. the row closest to line but less than it)
+                                          const prevLine = Math.max(...candidates.map(item => item.row));
+                                      
+                                          // Filter candidates to only those in the prevLine.
+                                          const prevLineCandidates = candidates.filter(item => item.row === prevLine);
+                                      
+                                          // Find the candidate in this row with the col closest to slot.
+                                          const found = prevLineCandidates.reduce((closest, item) => {
+                                            // If closest is not set, return the current item
+                                            if (!closest) return item;
+                                            // Compare the absolute difference in col values
+                                            return (Math.abs(item.col - slot) < Math.abs(closest.col - slot)) ? item : closest;
+                                          }, null);
+                                          if (found) {
+                                            line = found.row;
+                                            slot = found.col;
+                                          }
+                                        }
+                                    }
+                                }
                             }
                         }
-
                         state.turbo = true;
                     }
+
                     else if (y && locked) {
                         const value = JSON.parse(this.#form.display[line][slot].replace("%", ""));
                         const newValue = "%" + JSON.stringify(value - y);
@@ -311,7 +398,6 @@ export class ABF {
                         lastInput = Date.now();
                         
                         if (['#'].some(k => this.#form.display[line][slot]?.startsWith(k))) return;
-                        //player.onScreenDisplay.setActionBar('§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +"§a§l" + this.#form.display[line][slot]);
                         if (['%'].some(k => this.#form.display[line][slot]?.startsWith(k))) {
                             locked = !locked;
                             return;
