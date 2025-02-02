@@ -194,6 +194,8 @@ export class ABF {
                 
                 // runinterval to show the player the form and update it
                 let i = 10;
+                let locked = false;
+                let lastInput = 0; //stop double input
                 this.#run = system.runInterval(() => {
                     const mx = -player.inputInfo.getMovementVector().x;
                     const my = -player.inputInfo.getMovementVector().y;
@@ -211,7 +213,7 @@ export class ABF {
                     }
 
                     // behavior based on what you moved
-                    if (y || x) {
+                    if ((y || x) && !locked) {
                         state.turbo ? (state.ms += 1) : (state.ms += 4);
 
                         if (x) {
@@ -248,7 +250,13 @@ export class ABF {
                         }
 
                         state.turbo = true;
-                    } else state.turbo = false;
+                    }
+                    else if (y && locked) {
+                        const value = JSON.parse(this.#form.display[line][slot].replace("%", ""));
+                        const newValue = "%" + JSON.stringify(value - y);
+                        this.#form.display[line][slot] = newValue;
+                    }
+                    else state.turbo = false;
                     
                     // display the form
                     const tick = system.currentTick % 20
@@ -265,7 +273,8 @@ export class ABF {
                                             }
                                             if (button?.startsWith("%")) {
                                                 if (rowIndex === line && buttonIndex === slot)
-                                                    return `§l${button.slice(1)}§r${colorA}`;
+                                                    //return `§l${button.slice(1)}§r${colorA}`;
+                                                return `§l${tick1 > 2 ? "" : this.ui.render.light}${tick > 9 ? ' -' : '- '}${button}${tick > 9 ? '- ' : ' -'}§r${colorA}`;
                                                 else return button.slice(1)
                                             }
                                             if (rowIndex === line && buttonIndex === slot) {
@@ -294,9 +303,21 @@ export class ABF {
                     }
 
                     if (player.inputInfo.getButtonState(InputButton.Jump) === "Pressed") {
-                        if (['#', '%'].some(k => this.#form.display[line][slot]?.startsWith(k))) return;
-                        //player.onScreenDisplay.setActionBar('§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +"§a§l" + this.#form.display[line][slot]);
+                        //stop unintentional double input by setting a delay of 200 ms
+                        player.sendMessage(JSON.stringify(Date.now() - lastInput));
+                        if (Date.now() - lastInput < 200) {
+                            lastInput = Date.now();
+                            return;
+                        }
+                        lastInput = Date.now();
                         
+                        if (['#'].some(k => this.#form.display[line][slot]?.startsWith(k))) return;
+                        //player.onScreenDisplay.setActionBar('§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +"§a§l" + this.#form.display[line][slot]);
+                        if (['%'].some(k => this.#form.display[line][slot]?.startsWith(k))) {
+                            locked = !locked;
+                            return;
+                        }
+
                         system.runTimeout(() => {
                             player.inputPermissions.movementEnabled = true;
                             resolve({ line, slot, cancelled: false })
