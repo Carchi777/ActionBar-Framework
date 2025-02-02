@@ -8,7 +8,7 @@ world.afterEvents.chatSend.subscribe(({ message, sender: player }) => {
     const form = new ABF()
         .title('   What option do you think is correct?    \n')
         .pattern([
-            ['#      ', 'Option 1', '#      ', 'Option 2'],
+            ['#      ', 'Option 1', '#      ', 'Option 2', '%1'],
             ['#      ', 'Option 3', '#      ', 'Option 4', '#\n'],
             ['#      ', '#Do you think this form is cool?', '#      '],
             ['#         ', 'Yes', '#            ', 'No', '#']
