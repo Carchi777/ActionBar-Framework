@@ -304,7 +304,6 @@ export class ABF {
 
                     if (player.inputInfo.getButtonState(InputButton.Jump) === "Pressed") {
                         //stop unintentional double input by setting a delay of 200 ms
-                        player.sendMessage(JSON.stringify(Date.now() - lastInput));
                         if (Date.now() - lastInput < 200) {
                             lastInput = Date.now();
                             return;
