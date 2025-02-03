@@ -42,58 +42,7 @@ export const UI = {
     }
 }
 
-export class Line {
-    #content = [];
-
-    constructor(arr = []) {
-        this.#content = arr;
-        return this;
-    }
-
-    set(arr) {
-        if (Array.isArray(arr) && arr.every(item => typeof item === 'string')) {
-            this.#content = arr;
-        }
-        return this;
-    }
-
-    add(item, isText = false) {
-        if (typeof item === 'string') {
-            const formattedItem = isText ? `#${item}` : item;
-            this.#content.push(formattedItem);
-        }
-        return this;
-    }
-
-    insertAt(index, item, isText = false) {
-        if (typeof item === 'string') {
-            const formattedItem = isText ? `#${item}` : item;
-            this.#content.splice(index, 0, formattedItem);
-        }
-        return this;
-    }
-
-    replace(index, item, isText = false) {
-        if (typeof item === 'string' && index >= 0 && index < this.#content.length) {
-            const formattedItem = isText ? `#${item}` : item;
-            this.#content.splice(index, 1, formattedItem);
-        }
-        return this;
-    }
-
-    remove(index) {
-        if (index >= 0 && index < this.#content.length) {
-            this.#content.splice(index, 1);
-        }
-        return this;
-    }
-
-    get() {
-        return this.#content;
-    }
-}
-
-
+//TO DO : return numbers data, customizable number increaments
 // Class
 export class ABF {
     // initialization of the form
@@ -126,6 +75,7 @@ export class ABF {
 
     settings = {
         cancellable: false,
+        valuesRange: "-2000000000_2000000000",
         type: {
             slow: () => this.#type = "slow",
             default: () => this.#type = "default"
@@ -140,22 +90,6 @@ export class ABF {
     pattern(pattern = [['']]) {
         this.#form.display = pattern
         return this;
-    }
-
-    addLine(line) {
-        this.#form.display.push(line.get());
-        return this;
-    }
-    removeLine(index) {
-        this.#form.display.splice(index, 1);
-        return this;
-    }
-    replaceLine(index, line) {
-        this.#form.display.splice(index, 1, line.get());
-        return this;
-    }
-    insertLineAt(index, line) {
-        this.#form.display.splice(index, 0, line.get());
     }
 
     /**@param {{y:(y: number,line:number,slot:number,player:Player) => { line: number, slot:number },x:(x: number,line:number,slot:number,player:Player) => { line: number, slot:number }}} scripts */
@@ -178,7 +112,7 @@ export class ABF {
     // show method (it needs to be optimized that is a sketch version)
 
     /**@param {Player} player @param {number} line @param {number} slot @returns {Promise<{line:number,slot:number,cancelled:boolean}>}*/
-    show(player, line, slot) {
+    show(player, line, slot, devmode = false) {
         // disable player movement
         system.run(() => player.inputPermissions.movementEnabled = false)
         // promise to select what to do after the end of the form
@@ -230,11 +164,17 @@ export class ABF {
                 let i = 10;
                 let locked = false;
                 let lastInput = 0; //stop double input
+                let loaded = true;
+                if (this.#type === "slow") loaded = false;
                 this.#run = system.runInterval(() => {
                     const mx = -player.inputInfo.getMovementVector().x;
                     const my = -player.inputInfo.getMovementVector().y;
                     const x = mx > 0.7 ? 1 : mx < -0.7 ? -1 : 0;
                     const y = my > 0.7 ? 1 : my < -0.7 ? -1 : 0;
+
+                    if (devmode) {
+                        player.onScreenDisplay.setTitle("§a", {subtitle: `offset x: ${this.#offsetX}, offset y: ${this.#offsetY}`, fadeInDuration: 0, fadeOutDuration: 0, stayDuration: 11})
+                    }
                     
                     // timing
                     if (state.ms > 0) {
@@ -245,7 +185,7 @@ export class ABF {
                             state.ms = 0;
                         }
                     }
-                    if ((y || x) && !locked) {
+                    if ((y || x) && !locked && !devmode) {
                         state.turbo ? (state.ms += 1) : (state.ms += 4);
                         if(x) {
                             const found = filtered.find(item => item.row === line && item.col === x + slot);
@@ -337,10 +277,34 @@ export class ABF {
                         }
                         state.turbo = true;
                     }
+                    else if(devmode) {
+                        if (x) {
+                            this.#offsetX += x;
+                            if (this.#offsetX > 99) this.#offsetX = 99;
+                            if (this.#offsetX < 0) this.#offsetX = 0;
+                        }
+                        if (y) {
+                            this.#offsetY += y;
+                            if (this.#offsetY > 99) this.#offsetY = 99;
+                            if (this.#offsetY < 0) this.#offsetY = 0;
+                        }
+                    }
 
                     else if (y && locked) {
-                        const value = JSON.parse(this.#form.display[line][slot].replace("%", ""));
-                        const newValue = "%" + JSON.stringify(value - y);
+                        let value = JSON.parse(this.#form.display[line][slot].split(" ")[0].replace("%", "")) -y;
+                        try {
+                            const min = JSON.parse(this.#form.display[line][slot].split(" ")[1].split("_")[0]);
+                            const max = JSON.parse(this.#form.display[line][slot].split(" ")[1].split("_")[1]);
+                            if (value > max) value = max;
+                            if (value < min) value = min;
+                        }
+                        catch {
+                            const min = JSON.parse(this.settings.valuesRange.split("_")[0]);
+                            const max = JSON.parse(this.settings.valuesRange.split("_")[1]);
+                            if (value > max) value = max;
+                            if (value < min) value = min;
+                        }
+                        const newValue = "%" + JSON.stringify(value) + " " + this.#form.display[line][slot].split(" ")[1];
                         this.#form.display[line][slot] = newValue;
                     }
                     else state.turbo = false;
@@ -348,7 +312,7 @@ export class ABF {
                     // display the form
                     const tick = system.currentTick % 20
                     const tick1 = system.currentTick % 6
-                    if (x || y || tick1 == 2 || tick == 9) // update: dont update the form when not needed
+                    if (x || y || tick1 == 2 || tick == 9 || !loaded) // update: dont update the form when not needed
                         try {
                             let output = '§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +
                                 this.ui.background + `§r§${this.ui.colors.title}${this.#title}§r${colorA}\n` +
@@ -361,8 +325,8 @@ export class ABF {
                                             if (button?.startsWith("%")) {
                                                 if (rowIndex === line && buttonIndex === slot)
                                                     //return `§l${button.slice(1)}§r${colorA}`;
-                                                return `§l${tick1 > 2 ? "" : this.ui.render.light}${tick > 9 ? ' -' : '- '}${button}${tick > 9 ? '- ' : ' -'}§r${colorA}`;
-                                                else return button.slice(1)
+                                                return `§l${tick1 > 2 ? "" : this.ui.render.light}${tick > 9 ? ' -' : '- '}${button.slice(1).split(" ")[0]}${tick > 9 ? '- ' : ' -'}§r${colorA}`;
+                                                else return button.slice(1).split(" ")[0]
                                             }
                                             if (rowIndex === line && buttonIndex === slot) {
                                                 return `§l${tick1 > 2 ? colorB : this.ui.render.light}${tick > 9 ? ' -' : '- '}${button}${tick > 9 ? '- ' : ' -'}§r${colorA}`;
@@ -371,9 +335,10 @@ export class ABF {
                                         }).join(`§r${colorA}`);
                                     }).join("\n");
                                 if (this.#type == "slow") {
-                                    while (output[i-1] == " " || output[i-1] == "§") { i++;}
-                                    player.onScreenDisplay.setActionBar(output.substring(0,i) + new Array(output.lenght).fill(' ').join('')); // needs some calcs to create the background without text
+                                    while (output[i-1] == " " || output[i-1] == "§" || output[i] == " ") { i++;}
+                                    player.onScreenDisplay.setActionBar(output.substring(0,i) + "\n".repeat(output.split("\n").length - (output.substring(0,i).split("\n").length - 1))); // needs some calcs to create the background without text
                                     i++;
+                                    if (i >= output.length -1) loaded = true;
                                 }
                                 else if (this.#type == "default") {
                                     player.onScreenDisplay.setActionBar(output);
@@ -382,7 +347,7 @@ export class ABF {
                             throw new Error('[ActionBarFramework] Unable to dislplay the form. ' + e)
                         }
                     // conclusion
-                    if (player.inputInfo.getButtonState(InputButton.Sneak) === "Pressed" && this.cancellable == true) {
+                    if (player.inputInfo.getButtonState(InputButton.Sneak) === "Pressed" && (this.cancellable == true || devmode)) {
                         player.onScreenDisplay.setActionBar('§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +"§c§lCanceled");
                         system.runTimeout(() => (player.inputPermissions.movementEnabled = true), 4);
                         resolve({ line: undefined, slot: undefined, cancelled: true });
