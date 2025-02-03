@@ -1,17 +1,14 @@
 import { world } from "@minecraft/server"
-import {ABF,UI,Scripts,Line} from "abf.js";
+import {ABF,UI,Scripts} from "abf.js";
 world.afterEvents.chatSend.subscribe(({ message, sender: player }) => {
     if (message != 'form') return;
-    const line = new Line();
-    line.add('test', true).add('test').add('test',true)
-    line.remove(2)
     const form = new ABF()
         .title('   What option do you think is correct?    \n')
         .pattern([
-            ['#      ', 'Option 1', '#      ', 'Option 2', '%1'],
+            ['#          ', '%1 0_10', "#                    ", "%0"],
             ['#      ', 'Option 3', '#      ', 'Option 4', '#\n'],
             ['#      ', '#Do you think this form is cool?', '#      '],
-            ['#         ', 'Yes', '#            ', 'No', '#']
+            ['#         ', 'Yes', '#            ', 'No', '#'],
 
         ])
         .scripts(Scripts.basic)
