@@ -42,7 +42,6 @@ export const UI = {
     }
 }
 
-//TO DO : return numbers data
 // Class
 export class ABF {
     // initialization of the form
@@ -331,7 +330,7 @@ export class ABF {
                     if (player.inputInfo.getButtonState(InputButton.Sneak) === "Pressed" && (this.cancellable == true || devmode)) {
                         player.onScreenDisplay.setActionBar('§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +"§c§lCanceled");
                         system.runTimeout(() => (player.inputPermissions.movementEnabled = true), 4);
-                        resolve({ line: undefined, slot: undefined, cancelled: true });
+                        resolve({ line: undefined, slot: undefined, cancelled: true, undefined });
                         system.clearRun(this.#run);
                     }
 
@@ -348,10 +347,22 @@ export class ABF {
                             locked = !locked;
                             return;
                         }
+                        const values = [];
+                        this.#form.display.forEach((row, rowIndex) => {
+                            row.forEach((str, colIndex) => {
+                              if (str.startsWith("%")) {
+                                  values.push({
+                                    line: rowIndex,
+                                    slot: colIndex,
+                                    value: JSON.parse(str.slice(1).split(" ")[0])
+                                  });
+                                }
+                            });
+                          });
 
                         system.runTimeout(() => {
                             player.inputPermissions.movementEnabled = true;
-                            resolve({ line, slot, cancelled: false })
+                            resolve({ line, slot, cancelled: false, values })
                             player.onScreenDisplay.setActionBar(" ");
                         }, 4);
                         system.clearRun(this.#run);
