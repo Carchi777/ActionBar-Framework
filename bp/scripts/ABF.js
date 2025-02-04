@@ -42,7 +42,7 @@ export const UI = {
     }
 }
 
-//TO DO : return numbers data, customizable number increaments
+//TO DO : return numbers data
 // Class
 export class ABF {
     // initialization of the form
@@ -76,6 +76,7 @@ export class ABF {
     settings = {
         cancellable: false,
         valuesRange: "-2000000000_2000000000",
+        increament: 1,
         type: {
             slow: () => this.#type = "slow",
             default: () => this.#type = "default"
@@ -159,7 +160,6 @@ export class ABF {
                   });
                 });
 
-                
                 // runinterval to show the player the form and update it
                 let i = 10;
                 let locked = false;
@@ -185,7 +185,7 @@ export class ABF {
                             state.ms = 0;
                         }
                     }
-                    if ((y || x) && !locked && !devmode) {
+                    if ((y || x) && !locked && !devmode) {//handle movement
                         state.turbo ? (state.ms += 1) : (state.ms += 4);
                         if(x) {
                             const found = filtered.find(item => item.row === line && item.col === x + slot);
@@ -216,62 +216,36 @@ export class ABF {
                             }
                             else {
                                 if (y>0) {
-                                    const found = filtered.find(item => item.row > line && item.col === slot);
-                                    if (found) {
-                                        line = found.row;
-                                    }
-                                    else {
-                                        const candidates = filtered.filter(item => item.row > line);
+                                    const candidates = filtered.filter(item => item.row > line);
 
-                                        if (candidates.length > 0) {
-                                          // Find the next existing line (i.e. the smallest row number)
-                                          const nextLine = Math.min(...candidates.map(item => item.row));
-                                      
-                                          // Filter candidates to only those in the next line.
-                                          const nextLineCandidates = candidates.filter(item => item.row === nextLine);
-                                      
-                                          // Find the candidate in this row with the col closest to slot.
-                                          const found = nextLineCandidates.reduce((closest, item) => {
-                                            // If closest is not set, return the current item
-                                            if (!closest) return item;
-                                            // Compare the absolute difference in col values
-                                            return (Math.abs(item.col - slot) < Math.abs(closest.col - slot)) ? item : closest;
-                                          }, null);
-                                          if (found) {
-                                            line = found.row;
-                                            slot = found.col;
-                                          }
-                                        }
+                                    if (candidates.length > 0) {
+                                        const nextLine = Math.min(...candidates.map(item => item.row));
+                                
+                                        const nextLineItems = candidates.filter(item => item.row === nextLine);
+                                
+                                        const closestItem = nextLineItems.reduce((closest, item) => {
+                                            return Math.abs(item.col - slot) < Math.abs(closest.col - slot) ? item : closest;
+                                        }, nextLineItems[0]);
+                                
+                                        line = closestItem.row;
+                                        slot = closestItem.col;
                                     }
                                 }
                                 else if (y<0) {
-                                    const found = filtered.find(item => item.row < line && item.col === slot);
-                                    if (found) {
-                                        line = found.row;
-                                    }
-                                    else {
-                                        const candidates = filtered.filter(item => item.row < line);
-
-                                        if (candidates.length > 0) {
-                                          // Find the largest row (i.e. the row closest to line but less than it)
-                                          const prevLine = Math.max(...candidates.map(item => item.row));
-                                      
-                                          // Filter candidates to only those in the prevLine.
-                                          const prevLineCandidates = candidates.filter(item => item.row === prevLine);
-                                      
-                                          // Find the candidate in this row with the col closest to slot.
-                                          const found = prevLineCandidates.reduce((closest, item) => {
-                                            // If closest is not set, return the current item
-                                            if (!closest) return item;
-                                            // Compare the absolute difference in col values
-                                            return (Math.abs(item.col - slot) < Math.abs(closest.col - slot)) ? item : closest;
-                                          }, null);
-                                          if (found) {
-                                            line = found.row;
-                                            slot = found.col;
-                                          }
-                                        }
-                                    }
+                                    const candidates = filtered.filter(item => item.row < line);
+    
+                                    if (candidates.length > 0) {
+                                        const prevLine = Math.max(...candidates.map(item => item.row));
+                                
+                                        const prevLineItems = candidates.filter(item => item.row === prevLine);
+                                
+                                        const closestItem = prevLineItems.reduce((closest, item) => {
+                                            return Math.abs(item.col - slot) < Math.abs(closest.col - slot) ? item : closest;
+                                        }, prevLineItems[0]);
+                                
+                                        line = closestItem.row;
+                                        slot = closestItem.col;
+                                    }     
                                 }
                             }
                         }
@@ -291,7 +265,14 @@ export class ABF {
                     }
 
                     else if (y && locked) {
-                        let value = JSON.parse(this.#form.display[line][slot].split(" ")[0].replace("%", "")) -y;
+                        state.turbo ? (state.ms += 1) : (state.ms += 4);
+                        let increament;
+                        try {
+                            increament = JSON.parse(this.#form.display[line][slot].split(" ")[2]);
+                        }catch {
+                            increament = this.settings.increament;
+                        }
+                        let value = JSON.parse(this.#form.display[line][slot].split(" ")[0].replace("%", "")) - (y * increament ?? 1);
                         try {
                             const min = JSON.parse(this.#form.display[line][slot].split(" ")[1].split("_")[0]);
                             const max = JSON.parse(this.#form.display[line][slot].split(" ")[1].split("_")[1]);
@@ -304,7 +285,7 @@ export class ABF {
                             if (value > max) value = max;
                             if (value < min) value = min;
                         }
-                        const newValue = "%" + JSON.stringify(value) + " " + this.#form.display[line][slot].split(" ")[1];
+                        const newValue = "%" + JSON.stringify(value) + " " + this.#form.display[line][slot].split(" ")[1] + " " + JSON.stringify(increament);
                         this.#form.display[line][slot] = newValue;
                     }
                     else state.turbo = false;
@@ -325,7 +306,7 @@ export class ABF {
                                             if (button?.startsWith("%")) {
                                                 if (rowIndex === line && buttonIndex === slot)
                                                     //return `§l${button.slice(1)}§r${colorA}`;
-                                                return `§l${tick1 > 2 ? "" : this.ui.render.light}${tick > 9 ? ' -' : '- '}${button.slice(1).split(" ")[0]}${tick > 9 ? '- ' : ' -'}§r${colorA}`;
+                                                return `§l${tick1 > 2 ? "" : this.ui.render.light}${tick > 9 ? ' -' : '- '}${locked? '§a': ''}${button.slice(1).split(" ")[0]}${tick > 9 ? '- ' : ' -'}§r${colorA}`;
                                                 else return button.slice(1).split(" ")[0]
                                             }
                                             if (rowIndex === line && buttonIndex === slot) {
@@ -354,7 +335,7 @@ export class ABF {
                         system.clearRun(this.#run);
                     }
 
-                    if (player.inputInfo.getButtonState(InputButton.Jump) === "Pressed") {
+                    if (player.inputInfo.getButtonState(InputButton.Jump) === "Pressed" && loaded) {
                         //stop unintentional double input by setting a delay of 200 ms
                         if (Date.now() - lastInput < 200) {
                             lastInput = Date.now();
@@ -375,6 +356,15 @@ export class ABF {
                         }, 4);
                         system.clearRun(this.#run);
                         player.onScreenDisplay.setActionBar(" ");
+                    }
+                    //if the user pressed jump in slow mode while the form isn't fully loaded it instantly loads
+                    else if(player.inputInfo.getButtonState(InputButton.Jump) === "Pressed" && !loaded) {
+                        if (Date.now() - lastInput < 200) {
+                            lastInput = Date.now();
+                            return;
+                        }
+                        lastInput = Date.now();
+                        i+= 1000;
                     }
                 });
             }, 1)
