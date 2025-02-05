@@ -112,7 +112,7 @@ export class ABF {
     // show method (it needs to be optimized that is a sketch version)
 
     /**@param {Player} player @param {number} line @param {number} slot @returns {Promise<{line:number,slot:number,cancelled:boolean}>}*/
-    show(player, line, slot, devmode = false) {
+    show(player, line = 0, slot = 0, devmode = false) {
         // disable player movement
         system.run(() => player.inputPermissions.movementEnabled = false)
         // promise to select what to do after the end of the form
@@ -126,22 +126,7 @@ export class ABF {
                 const colorB = "§" + this.ui.colors.selected // select
                 const colorT = "§" + this.ui.colors.text // text
 
-                let foundIndex = false;
 
-                //decide which button should be selected if the one passed through show() is invalid
-                if (this.#form.display[line][slot].startsWith("#")) {
-                    for (let i = 0; i < this.#form.display.length; i++) {
-                        for (let j = 0; j < this.#form.display[i].length; j++) {
-                            if (!this.#form.display[i][j].startsWith("#")) {
-                                line = i;
-                                slot = j;  // Store row & column index
-                                foundIndex = true;
-                                break;
-                            }
-                        }
-                        if (foundIndex) break; // Stop looping if found
-                    }
-                }
                 const filtered = [];
 
                 // Iterate over each row and each string in the row
@@ -158,6 +143,29 @@ export class ABF {
                     }
                   });
                 });
+                if (!filtered.length) {
+                    line = 0;
+                    slot = 0;
+                }
+
+                let foundIndex = false;
+
+                //decide which button should be selected if the one passed through show() is invalid
+                if (this.#form.display[line][slot].startsWith("#")) {
+                    for (let i = 0; i < this.#form.display.length; i++) {
+                        for (let j = 0; j < this.#form.display[i].length; j++) {
+                            if (this.#form.display[i][j] && !this.#form.display[i][j].startsWith("#")) {
+                                line = i;
+                                slot = j;  // Store row & column index
+                                foundIndex = true;
+                                break;
+                            }
+                        }
+                        if (foundIndex) break; // Stop looping if found
+                    }
+                }
+
+
 
                 // runinterval to show the player the form and update it
                 let i = 10;
@@ -200,7 +208,7 @@ export class ABF {
                                     }
                                 }
                                 else if (x<0) {
-                                    const found = filtered.find(item => item.row === line && item.col < slot);
+                                    const found = filtered.slice().reverse().find(item => item.row === line && item.col < slot);;
                                     if (found) {
                                         slot = found.col;
                                     }
@@ -304,9 +312,13 @@ export class ABF {
                                             }
                                             if (button?.startsWith("%")) {
                                                 if (rowIndex === line && buttonIndex === slot)
-                                                    //return `§l${button.slice(1)}§r${colorA}`;
                                                 return `§l${tick1 > 2 ? "" : this.ui.render.light}${tick > 9 ? ' -' : '- '}${locked? '§a': ''}${button.slice(1).split(" ")[0]}${tick > 9 ? '- ' : ' -'}§r${colorA}`;
                                                 else return button.slice(1).split(" ")[0]
+                                            }
+                                            if (button?.startsWith("$")) {
+                                                if (rowIndex === line && buttonIndex === slot)
+                                                    return button.startsWith("$false") ? "" : "";
+                                                else return button.startsWith("$false") ? "" : "";
                                             }
                                             if (rowIndex === line && buttonIndex === slot) {
                                                 return `§l${tick1 > 2 ? colorB : this.ui.render.light}${tick > 9 ? ' -' : '- '}${button}${tick > 9 ? '- ' : ' -'}§r${colorA}`;
@@ -330,7 +342,7 @@ export class ABF {
                     if (player.inputInfo.getButtonState(InputButton.Sneak) === "Pressed" && (this.cancellable == true || devmode)) {
                         player.onScreenDisplay.setActionBar('§f'+ this.#offsetX.toString().padStart(2, '0') + this.#offsetY.toString().padStart(2, '0') +"§c§lCanceled");
                         system.runTimeout(() => (player.inputPermissions.movementEnabled = true), 4);
-                        resolve({ line: undefined, slot: undefined, cancelled: true, undefined });
+                        resolve({ line: undefined, slot: undefined, cancelled: true, values:undefined });
                         system.clearRun(this.#run);
                     }
 
@@ -342,9 +354,23 @@ export class ABF {
                         }
                         lastInput = Date.now();
                         
-                        if (['#'].some(k => this.#form.display[line][slot]?.startsWith(k))) return;
+                        if (['#'].some(k => this.#form.display[line][slot]?.startsWith(k)) && filtered.length) return;
+                        else if (['#'].some(k => this.#form.display[line][slot]?.startsWith(k)) && !filtered.length) {
+                            system.runTimeout(() => {
+                                player.inputPermissions.movementEnabled = true;
+                                resolve({ line: undefined, slot: undefined, cancelled: false, values:undefined });
+                                player.onScreenDisplay.setActionBar(" ");
+                            }, 4);
+                            system.clearRun(this.#run);
+                            player.onScreenDisplay.setActionBar(" ");
+                        }
                         if (['%'].some(k => this.#form.display[line][slot]?.startsWith(k))) {
                             locked = !locked;
+                            return;
+                        }
+                        if (this.#form.display[line][slot]?.startsWith("$")) {
+                            let value = JSON.parse(this.#form.display[line][slot].slice(1));
+                            this.#form.display[line][slot] = "$" + JSON.stringify(!value);
                             return;
                         }
                         const values = [];
@@ -354,9 +380,18 @@ export class ABF {
                                   values.push({
                                     line: rowIndex,
                                     slot: colIndex,
+                                    type: "number",
                                     value: JSON.parse(str.slice(1).split(" ")[0])
                                   });
                                 }
+                                if (str.startsWith("$")) {
+                                    values.push({
+                                      line: rowIndex,
+                                      slot: colIndex,
+                                      type: "toggle",
+                                      value: JSON.parse(str.slice(1).split(" ")[0])
+                                    });
+                                  }
                             });
                           });
 
