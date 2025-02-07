@@ -315,6 +315,12 @@ export class ABF {
                                                 return `§l${tick1 > 2 ? "" : this.ui.render.light}${tick > 9 ? ' -' : '- '}${locked? '§a': ''}${button.slice(1).split(" ")[0]}${tick > 9 ? '- ' : ' -'}§r${colorA}`;
                                                 else return button.slice(1).split(" ")[0]
                                             }
+                                            if (button?.startsWith("@")) {
+                                                if (rowIndex === line && buttonIndex === slot)
+                                                return `§l${tick1 > 2 ? "" : this.ui.render.light}${tick > 9 ? ' -' : '- '}${button?.includes("§o§n")? '§a' : ''}${button.slice(1)}${tick > 9 ? '- ' : ' -'}§r${colorA}`;
+                                                else if (button?.includes("§o§n")) return `§a${button.slice(1)}`
+                                                else return button.slice(1)
+                                            }
                                             if (button?.startsWith("$")) {
                                                 if (rowIndex === line && buttonIndex === slot)
                                                     return button.startsWith("$false") ? "" : "";
@@ -373,6 +379,18 @@ export class ABF {
                             this.#form.display[line][slot] = "$" + JSON.stringify(!value);
                             return;
                         }
+                        if (this.#form.display[line][slot]?.startsWith("@")) {
+                            if (this.#form.display[line][slot].includes("§o§n")) {
+                                this.#form.display[line][slot] = this.#form.display[line][slot].replace("§o§n", "§o§f§f");
+                            }
+                            else if (this.#form.display[line][slot].includes("§o§f§f")) {
+                                this.#form.display[line][slot] = this.#form.display[line][slot].replace("§o§f§f", "§o§n");
+                            }
+                            else {
+                                this.#form.display[line][slot] = this.#form.display[line][slot] + "§o§n§r"
+                            }
+                            return;
+                        }
                         const values = [];
                         this.#form.display.forEach((row, rowIndex) => {
                             row.forEach((str, colIndex) => {
@@ -391,7 +409,17 @@ export class ABF {
                                       type: "toggle",
                                       value: JSON.parse(str.slice(1).split(" ")[0])
                                     });
-                                  }
+                                }
+                                if (str.startsWith("@")) {
+                                    if (str.includes("§o§n")) {
+                                        values.push({
+                                            line: rowIndex,
+                                            slot: colIndex,
+                                            type: "checkbox",
+                                            value: str.slice(1).replace("§o§n§r", "")
+                                          });
+                                    }
+                                }
                             });
                           });
 
